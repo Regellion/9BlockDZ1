@@ -1,6 +1,9 @@
-import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Scanner;
 
 public class Main
@@ -15,44 +18,32 @@ public class Main
 
         try {
             String wayToFolder = scanner.nextLine();
-            BigDecimal countBytes = getDirectorySize(new File(wayToFolder));
+            BigDecimal countBytes = getDirectorySize(wayToFolder);
+            printSize(countBytes);
 
-            if (countBytes.compareTo(KbSize) < 0) {
-                System.out.println("Ваша папка весит " + countBytes.setScale(2, RoundingMode.CEILING) + " байт");
-            } else if (countBytes.compareTo(MbSize) < 0) {
-                System.out.println("Ваша папка весит " + (countBytes.divide(KbSize)).setScale(2, RoundingMode.CEILING) + " килобайт");
-            } else if (countBytes.compareTo(GbSize) < 0) {
-                System.out.println("Ваша папка весит " + (countBytes.divide(MbSize)).setScale(2, RoundingMode.CEILING) + " мегабайт");
-            } else {
-                System.out.println("Ваша папка весит " + (countBytes.divide(GbSize)).setScale(2,RoundingMode.CEILING) + " гигабайт");
-            }
         }
         catch (Exception ex){
             ex.printStackTrace();
         }
     }
 
-    // Папки могут быть очень большего размера, поэтому использовался BigDecimal
-    private static BigDecimal getDirectorySize(File directory) {
-        // Задаем начальное значение
-        BigDecimal size = BigDecimal.ZERO;
-        // Если путь ведет к файлу, то считаем его длину
-        if (directory.isFile()) {
-            size = BigDecimal.valueOf(directory.length());
-            // Если не к файлу, а к папке - ищим все вложеные файлы и считаем их длинну
+    private static void printSize(BigDecimal countBytes){
+        if (countBytes.compareTo(KbSize) < 0) {
+            System.out.println("Ваша папка весит " + countBytes.setScale(2, RoundingMode.CEILING) + " байт");
+        } else if (countBytes.compareTo(MbSize) < 0) {
+            System.out.println("Ваша папка весит " + (countBytes.divide(KbSize)).setScale(2, RoundingMode.CEILING) + " килобайт");
+        } else if (countBytes.compareTo(GbSize) < 0) {
+            System.out.println("Ваша папка весит " + (countBytes.divide(MbSize)).setScale(2, RoundingMode.CEILING) + " мегабайт");
         } else {
-            File[] subFiles = directory.listFiles();
-            if (subFiles != null) {
-                for (File file : subFiles) {
-                    if (file.isFile()) {
-                        size = size.add(BigDecimal.valueOf(file.length()));
-                        // Если в папке есть другие папки, то вновь применяем данный метод
-                    } else {
-                        size = size.add(getDirectorySize(file));
-                    }
-                }
-            }
+            System.out.println("Ваша папка весит " + (countBytes.divide(GbSize)).setScale(2,RoundingMode.CEILING) + " гигабайт");
         }
-        return size;
+    }
+
+    // Папки могут быть очень большего размера, поэтому использовался BigDecimal
+    private static BigDecimal getDirectorySize(String directory) throws IOException {
+        Path dirPath = Paths.get(directory);
+        long sum = Files.walk(dirPath).filter(path -> path.toFile().isFile())
+                .mapToLong(value -> value.toFile().length()).sum();
+        return BigDecimal.valueOf(sum);
     }
 }
